@@ -1,0 +1,130 @@
+{
+  "schema_version": "1.0.0",
+  "run": {
+    "status": "completed",
+    "started_at": "2026-11-28T08:29:14+00:00",
+    "completed_at": "2026-11-28T08:29:53+00:00",
+    "commit": "327082e4fbd68eb3ac56663eac7ed0026a2cb1b6",
+    "tag": "v0-baseline",
+    "application_worktree_clean": false
+  },
+  "progress": {
+    "total": 4,
+    "completed": 4,
+    "percent": 100.0,
+    "counts": {
+      "passed": 3,
+      "failed": 1,
+      "skipped": 0,
+      "error": 0
+    }
+  },
+  "measurements": [
+    {
+      "id": "STACK-01",
+      "name": "Running frontend, backend API, and API proxy",
+      "status": "passed",
+      "value": {
+        "frontend": {
+          "status_code": 200,
+          "content_type": "text/html",
+          "index_served": true
+        },
+        "backend_api": {
+          "invalid_login_payload_status": 400,
+          "rejected_by_validation": true
+        },
+        "frontend_api_proxy": {
+          "invalid_login_payload_status": 400,
+          "rejected_by_validation": true
+        }
+      },
+      "target": "Frontend 200; backend rejects invalid login payload; same rejection through frontend proxy",
+      "message": "MongoDB readiness is enforced by the Compose health dependency before the analyzer starts.",
+      "family": "Product quality / integration",
+      "tool": "Python HTTP client",
+      "command": "GET /; POST /api/auth/login with {} directly and through frontend proxy"
+    },
+    {
+      "id": "SE-14",
+      "name": "High and critical npm dependency vulnerabilities",
+      "status": "failed",
+      "value": {
+        "high": 32,
+        "critical": 3,
+        "projects": {
+          "backend": {
+            "high": 9,
+            "critical": 2,
+            "status": "failed"
+          },
+          "frontend": {
+            "high": 23,
+            "critical": 1,
+            "status": "failed"
+          }
+        }
+      },
+      "unit": "reported vulnerabilities",
+      "target": "0 high and 0 critical",
+      "message": "Uses each committed lockfile; registry advisories may change between runs.",
+      "family": "Security (ISO/IEC 25010 integrity)",
+      "tool": "npm audit",
+      "command": "npm audit --package-lock-only --audit-level=high --json (backend and frontend)"
+    },
+    {
+      "id": "SE-01",
+      "name": "Secrets in Git history",
+      "status": "passed",
+      "value": {
+        "finding_count": 0,
+        "findings": []
+      },
+      "unit": "findings",
+      "target": "0 findings across all refs",
+      "message": "Scans Git patches reachable from all refs using Gitleaks default rules; findings are redacted.",
+      "family": "Security (ISO/IEC 25010 confidentiality)",
+      "tool": "Gitleaks",
+      "command": "gitleaks git --log-opts=--all --report-format=json --redact <repository>"
+    },
+    {
+      "id": "WEB-01",
+      "name": "Login journey, accessibility, responsiveness, and LCP",
+      "status": "passed",
+      "value": {
+        "journey": {
+          "passed": true,
+          "login_heading_visible": true,
+          "labeled_email_and_password": true,
+          "submit_button_text": "Login",
+          "invalid_fields_after_empty_submit": 2,
+          "signup_link_present": true
+        },
+        "accessibility": {
+          "ruleset": "axe-core WCAG 2.0/2.1/2.2 A and AA tags",
+          "total_violations": 0,
+          "serious_critical_violations": 0,
+          "findings": []
+        },
+        "responsive": {
+          "viewport_width": 320,
+          "document_width": 320,
+          "horizontal_overflow_320px": false
+        },
+        "performance": {
+          "lcp_ms": 116
+        },
+        "environment": {
+          "browser": "Chromium",
+          "page": "/login",
+          "viewport": "1280x800 then 320x720"
+        }
+      },
+      "target": "Journey passes; 0 serious/critical axe violations; no overflow at 320px; LCP ≤ 2500ms",
+      "message": "Tests the live frontend container. Protected workflows need a seeded test account and are not covered yet.",
+      "family": "Interaction capability / web quality",
+      "tool": "Playwright + axe-core",
+      "command": "Playwright Chromium against http://frontend"
+    }
+  ]
+}

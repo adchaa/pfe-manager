@@ -1,0 +1,77 @@
+services:
+  database:
+    image: mongo:8.0@sha256:479e85ced54ffb8a40dade1dcde2da2a9ae858515b9415e9cc54bfb8f0575d01
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-quality}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-quality-local-only}
+      MONGO_INITDB_DATABASE: quality
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--username", "${MONGO_ROOT_USERNAME:-quality}", "--password", "${MONGO_ROOT_PASSWORD:-quality-local-only}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-quality}:${MONGO_ROOT_PASSWORD:-quality-local-only}@database:27017/quality?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-local-measurement-only-change-before-sharing}
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}).then(r=>process.exit(r.status===400?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  analyse:
+    profiles: [measure]
+    build:
+      context: .
+      dockerfile: measurement/Dockerfile
+    volumes:
+      - .:/workspace
+    working_dir: /opt/quality-measurement
+    environment:
+      PYTHONPATH: /opt/quality-measurement
+      MEASUREMENT_FRONTEND_URL: http://frontend
+      MEASUREMENT_BACKEND_URL: http://backend:3000
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: safe.directory
+      GIT_CONFIG_VALUE_0: /workspace
+    command: ["--root", "/workspace", "--output", "/workspace/docs/mesures/v0/measurements.json"]
+    depends_on:
+      database:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
