@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/dist
+**/coverage
+**/.vite
+**/.env
+**/uploads
+docs
+Interaction_Capability_Measurements.xlsx
+Projet_Fin_Module_DevOps_x_Qualite_3INLOG_VersionFinale.txt
